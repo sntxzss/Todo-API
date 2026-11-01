@@ -56,7 +56,23 @@ def get_todo_or_404(todo_id: int):
         raise HTTPException(status_code=404, detail="Todo not found")
     return todos_db[todo_id]
 
+@app.post("/lists", response_model=ListRead, status_code=201)
+def create(list_data: ListCreate):
+    global list_id
+    list_id += 1
+    new_list = {"id": list_id, **list_data.model_dump()}
+    lists_db[lists_id] = new_list
+    return new_list
 
+@app.get("/lists", response_model=list[ListRead])
+def get_lists():
+    return list(lists_db.values())
 
+@app.get("/lists/{list_id}", response_model=ListRead)
+def get_list(list_id: int):
+    return get_list_or_404(list_id)
 
-
+@app.delete("/lists/{list_id}", status_code=204)
+def delete_list(list_id: int):
+    get_list_or_404(list_id)
+    del lists_db[list_id]
