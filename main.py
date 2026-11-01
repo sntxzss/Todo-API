@@ -21,6 +21,7 @@ class TodoBase(BaseModel):
     title: str
     description: str | None = None
     tags: list[str] = []
+    done: bool = False
 
     @field_validator("tags", mode="before")
     def check(cls, v):
@@ -61,7 +62,7 @@ def create(list_data: ListCreate):
     global list_id
     list_id += 1
     new_list = {"id": list_id, **list_data.model_dump()}
-    lists_db[lists_id] = new_list
+    lists_db[list_id] = new_list
     return new_list
 
 @app.get("/lists", response_model=list[ListRead])
@@ -76,3 +77,41 @@ def get_list(list_id: int):
 def delete_list(list_id: int):
     get_list_or_404(list_id)
     del lists_db[list_id]
+
+@app.post("/lists/{list_id}/todos", response_model=TodoRead, status_code=201)
+def create_todo(list_id: int, todo_data: TodoCreate):
+    get_list_or_404(list_id)
+    global todo_id
+    todo_id += 1
+    new_todo = {"id": todo_id, "list_id": list_id, **todo_data.model_dump()}
+    todos_db[todo_id] = new_todo
+    return new_todo
+
+@app.get("/lists/{list_id}/todos", response_model=list[TodoRead])
+def get_todos(list_id: int, done: bool | None = None, tag: str | None = None):
+    get_list_or_404(list_id)
+    todos = [t for t in todos_db.values() if t["list_id"] == list_id]
+
+    if done is not None:
+        todos = [t for t in todos if t["done"] == done]
+
+    if tag is not None:
+        todos = [t for t in todos if tag.lower() in t["tags"]]
+
+    return todos
+
+@app.get("/todos/{todo_id}", response_model=TodoRead)
+def get_todo(todo_id: int):
+    return get_todo_or_404(todo_id)
+
+@app.patch("/todos/{todo_id}", response_model=TodoRead)
+def update_todo(todo_id: int, todo_data: TodoUpdate):
+    todo = get_todo_or_404(todo_id)
+    update_data = todo_data.model_dump(exclude_unset=True)
+    todo.update(update_data)
+    return todo
+
+@app.delete("/todos/{todo_id}", status_code=204)
+def delete_todo(todo_id: int):
+    get_todo_or_404(todo_id)
+    del todos_db[todo_id]
