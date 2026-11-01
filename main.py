@@ -46,7 +46,15 @@ class TodoUpdate(BaseModel):
             return None
         return list(dict.fromkeys(tag.lower() for tag in v))
     
+def get_list_or_404(list_id: int):
+    if list_id not in lists_db:
+        raise HTTPException(status_code=404, detail="List not found")
+    return lists_db[list_id]
 
+def get_todo_or_404(todo_id: int):
+    if todo_id not in todos_db:
+        raise HTTPException(status_code=404, detail="Todo not found")
+    return todos_db[todo_id]
 
 
 
