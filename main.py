@@ -59,6 +59,9 @@ def get_todo_or_404(todo_id: int):
 
 @app.post("/lists", response_model=ListRead, status_code=201)
 def create(list_data: ListCreate):
+    for existing_list in lists_db.values():
+     if existing_list["title"].lower() == list_data.title.lower():
+      raise HTTPException(status_code=409, detail="List with this title already exists")
     global list_id
     list_id += 1
     new_list = {"id": list_id, **list_data.model_dump()}
